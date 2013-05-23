@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Websocket Test</title>
+		<meta charset="utf-8">
+		<style>
+			body {
+			}
+			
+			#messages {
+				
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Websocket Test</h1>
+		<div>
+			<input type="text" id="message" size="30" value="">
+			<input type="submit" id="submit" value="send">
+			<hr />
+		</div>
+		<div id="messages"></div>
+
+		<script>
+			var ws;
+			var messages;
+
+			init();
+			
+			function init() {
+				messages = document.getElementById("messages");
+				
+				connect();
+
+				var submit = document.getElementById("submit");
+				submit.addEventListener('click', sendMessage, false);
+			}
+
+			function connect() {
+				if (ws != null) {
+					ws.close();
+					ws = null;
+				}
+				
+				updateMessage("connecting....");
+				ws = new WebSocket("ws://{{.WSAddr}}/stream");
+				ws.onopen = onOpen;
+				ws.onclose = onClose;
+				ws.onmessage = onMessage;
+				
+				window.onbeforeunload = function() {
+					ws.onclose = function() {};
+					ws.close();
+				};
+			}
+			
+			function sendMessage() {
+				var message = document.getElementById("message");
+
+				var m = JSON.stringify({Message:message.value, Time:new Date()});
+				console.log("send", m);
+
+				if (ws != null) {
+					if (message.value != "") ws.send(m);
+				}
+
+				message.value = ""
+			}
+			
+			function onOpen(e) {
+				console.log("open", e);
+				updateMessage("connected");
+			}
+			
+			function onClose(e) {
+				console.log("close", e);
+				updateMessage("connection closed");
+				ws = null;
+
+				window.setTimeout(connect, 3000); 
+			}
+			
+			function onMessage(e) {
+				console.log("message", e);
+				var m = JSON.parse(e.data);
+				updateMessage(m.Message);
+			}
+			
+			function getTime() {
+				var	now = new Date(),
+					t = [now.getHours(), now.getMinutes(), now.getSeconds()];
+				
+				for (var i in t) if (t[i] < 10) t[i] = "0" + t[i];
+				return t.join(":");
+			}
+			
+			function updateMessage(msg) {
+				var d = document.createElement("div");
+				d.innerHTML = getTime() + " - " + msg;
+				messages.insertBefore(d, messages.firstChild);
+			}
+			
+		</script>
+	</body>
+</html>
