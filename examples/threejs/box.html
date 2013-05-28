@@ -18,8 +18,18 @@
 	</head>
 	<body>
 		<script src="three.min.js"></script>
-		<script src="js/controls/OrbitControls.js"></script>
 		<script src="js/libs/stats.min.js"></script>
+
+		<script src="js/controls/OrbitControls.js"></script>
+
+		<script src="js/shaders/CopyShader.js"></script>
+		<script src="js/shaders/SepiaShader.js"></script>
+		<script src="js/shaders/VignetteShader.js"></script>
+		
+		<script src="js/postprocessing/EffectComposer.js"></script>
+		<script src="js/postprocessing/RenderPass.js"></script>
+		<script src="js/postprocessing/MaskPass.js"></script>
+		<script src="js/postprocessing/ShaderPass.js"></script>
 
 		<script>
 			var SCREEN_WIDTH = window.innerWidth;
@@ -27,7 +37,7 @@
 
 			var container, stats;
 			var camera, controls;
-			var scene, renderer, projector, raycaster;
+			var scene, renderer, composer, projector, raycaster;
 			var light;
 
 			var mouse = new THREE.Vector2(), INTERSECTED;
@@ -105,7 +115,8 @@
 						geometry, 
 						new THREE.MeshPhongMaterial({
 							color: 0xffffff,
-							ambient: 0xffffff
+							ambient: 0xffffff,
+							shading: THREE.FlatShading
 						})
 					);
 					mesh.position.x = (Math.random() - 0.5) * 1000;
@@ -137,6 +148,18 @@
 				container = document.createElement('div');
 				document.body.appendChild(container);
 				container.appendChild(renderer.domElement);
+
+				// post processing
+				composer = new THREE.EffectComposer(renderer);
+				composer.addPass(new THREE.RenderPass(scene, camera));
+
+				var effect = new THREE.ShaderPass(THREE.SepiaShader);
+				composer.addPass(effect);
+
+				var effect = new THREE.ShaderPass(THREE.VignetteShader);
+				effect.renderToScreen = true;
+				composer.addPass(effect);
+
 
 				// stats
 				stats = new Stats();
@@ -216,9 +239,8 @@
 					if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
 					INTERSECTED = null;
 				}
-
 				// render
-				renderer.render(scene, camera);
+				composer.render();
 			}
 		</script>
 	</body>
